@@ -1,0 +1,234 @@
+{
+  "articles": [
+    {
+      "article_id": "AZKB001",
+      "title": "VM Not Starting - Initial Recovery Runbook",
+      "category": "compute",
+      "keywords": [
+        "vm",
+        "virtual machine",
+        "cannot start",
+        "boot diagnostics",
+        "stopped",
+        "compute"
+      ],
+      "solution_summary": "Triage and recover an Azure VM that fails to boot or start",
+      "steps": [
+        "Check Azure Service Health for regional compute incidents",
+        "Verify VM power state and recent activity logs",
+        "Open Boot Diagnostics and capture screenshot and serial logs",
+        "Validate disk health and OS disk attachment",
+        "Run Azure VM Repair extension or serial console checks",
+        "If still failing, restore from latest snapshot or backup"
+      ],
+      "prerequisites": [
+        "Contributor access to resource group",
+        "Boot diagnostics enabled"
+      ]
+    },
+    {
+      "article_id": "AZKB002",
+      "title": "NSG Blocking Application Traffic",
+      "category": "networking",
+      "keywords": [
+        "nsg",
+        "network security group",
+        "port blocked",
+        "vnet",
+        "subnet",
+        "connectivity"
+      ],
+      "solution_summary": "Diagnose and resolve inbound or outbound traffic blocked by NSG rules",
+      "steps": [
+        "Identify source and destination IPs, ports, and protocol",
+        "Inspect effective security rules on NIC and subnet",
+        "Check rule priority conflicts and deny-all behavior",
+        "Create least-privilege allow rule with proper priority",
+        "Validate with Network Watcher IP flow verify",
+        "Monitor flow logs to confirm traffic is allowed"
+      ]
+    },
+    {
+      "article_id": "AZKB003",
+      "title": "Storage Account Access Denied (403)",
+      "category": "storage",
+      "keywords": [
+        "storage account",
+        "blob",
+        "403",
+        "forbidden",
+        "sas",
+        "firewall"
+      ],
+      "solution_summary": "Resolve storage access denied errors caused by auth, RBAC, or firewall constraints",
+      "steps": [
+        "Validate whether request uses Entra ID, account key, or SAS",
+        "Check RBAC role assignments at correct scope",
+        "Review storage firewall and private endpoint configuration",
+        "Regenerate SAS token if expired or missing permissions",
+        "Retest with Azure Storage Explorer or CLI",
+        "Enable diagnostic logs for failed authorization events"
+      ],
+      "prerequisites": [
+        "Reader access to subscription",
+        "Storage diagnostic settings enabled"
+      ]
+    },
+    {
+      "article_id": "AZKB004",
+      "title": "Managed Identity or RBAC Permission Denied",
+      "category": "identity",
+      "keywords": [
+        "managed identity",
+        "rbac",
+        "role assignment",
+        "permission denied",
+        "access denied",
+        "entra"
+      ],
+      "solution_summary": "Fix authorization failures for managed identities and service principals",
+      "steps": [
+        "Confirm identity object ID and tenant context",
+        "Review role assignments at resource, group, and subscription scope",
+        "Assign least-privilege built-in role required for action",
+        "Wait for propagation and refresh tokens",
+        "Retest operation and capture correlation ID",
+        "For Key Vault, verify access policy or RBAC mode"
+      ],
+      "prerequisites": [
+        "Privileged role for role assignments",
+        "Access to activity logs"
+      ]
+    },
+    {
+      "article_id": "AZKB005",
+      "title": "AKS Pod CrashLoopBackOff Remediation",
+      "category": "aks",
+      "keywords": [
+        "aks",
+        "kubernetes",
+        "pod",
+        "crashloopbackoff",
+        "image pull",
+        "node pool"
+      ],
+      "solution_summary": "Stabilize AKS workloads that are repeatedly crashing",
+      "steps": [
+        "Get pod events and previous container logs",
+        "Check image pull errors and registry permissions",
+        "Validate CPU and memory limits against real usage",
+        "Inspect readiness and liveness probes",
+        "Check node pressure, autoscaler status, and taints",
+        "Roll out fixed deployment and monitor restart count"
+      ],
+      "prerequisites": [
+        "AKS cluster access",
+        "kubectl access and RBAC permissions"
+      ]
+    },
+    {
+      "article_id": "AZKB006",
+      "title": "Unexpected Azure Cost Spike Investigation",
+      "category": "billing",
+      "keywords": [
+        "cost",
+        "billing",
+        "invoice",
+        "budget",
+        "unexpected charge",
+        "finops"
+      ],
+      "solution_summary": "Investigate sudden cost increase and identify optimization actions",
+      "steps": [
+        "Use Cost Analysis to isolate subscription, service, and region deltas",
+        "Identify top cost drivers by tag, resource group, and meter",
+        "Check for new deployments, scale changes, and unattached disks",
+        "Set or update budget alerts and anomaly alerts",
+        "Recommend right-sizing, reservations, or shutdown schedules",
+        "Document owner actions and expected monthly savings"
+      ]
+    },
+    {
+      "article_id": "AZKB007",
+      "title": "Azure Monitor Alert Not Firing",
+      "category": "monitoring",
+      "keywords": [
+        "azure monitor",
+        "alert",
+        "log analytics",
+        "application insights",
+        "metric alert"
+      ],
+      "solution_summary": "Diagnose alert rules that fail to trigger or notify",
+      "steps": [
+        "Verify signal type and target resource scope",
+        "Check alert condition threshold and aggregation period",
+        "Validate action group configuration and receiver health",
+        "Confirm diagnostic settings send data to workspace",
+        "Run KQL query for expected signal data in timeframe",
+        "Adjust rule sensitivity and retest with synthetic event"
+      ],
+      "prerequisites": [
+        "Monitoring Reader role",
+        "Access to action groups"
+      ]
+    },
+    {
+      "article_id": "AZKB008",
+      "title": "ARM/Bicep Deployment Failed",
+      "category": "deployment",
+      "keywords": [
+        "arm",
+        "bicep",
+        "deployment failed",
+        "template",
+        "pipeline",
+        "devops"
+      ],
+      "solution_summary": "Resolve infrastructure deployment failures in ARM or Bicep workflows",
+      "steps": [
+        "Capture deployment operation details and top error code",
+        "Validate template syntax and parameter values",
+        "Check resource provider registration and region availability",
+        "Verify identity permissions for all target resources",
+        "Re-run deployment in what-if mode for drift preview",
+        "Apply corrected template and monitor rollout"
+      ]
+    },
+    {
+      "article_id": "AZDOC005",
+      "title": "Deployment troubleshooting documentation | Microsoft Learn",
+      "category": "deployment",
+      "keywords": [
+        "arm",
+        "bicep",
+        "deployment",
+        "documentation",
+        "file",
+        "learn",
+        "microsoft",
+        "template",
+        "troubleshooting"
+      ],
+      "solution_summary": "Troubleshoot Azure deployments for Bicep files and Azure Resource Manager templates.",
+      "steps": [
+        "What is deployment troubleshooting?",
+        "Troubleshoot Bicep file",
+        "Troubleshoot ARM template JSON",
+        "Common deployment errors",
+        "ARM template file syntax",
+        "ARM template test toolkit"
+      ],
+      "prerequisites": [
+        "Access to Azure Portal and target subscription",
+        "Permission to read Activity Log and resource configuration"
+      ],
+      "source_url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/",
+      "source_type": "microsoft_learn",
+      "service": "azure-resource-manager",
+      "severity_hint": "medium",
+      "status": "approved",
+      "last_verified_utc": "2026-05-09T16:56:28.919396+00:00"
+    }
+  ]
+}

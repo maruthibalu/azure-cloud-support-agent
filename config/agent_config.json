@@ -1,0 +1,124 @@
+{
+  "agent": {
+    "name": "Azure Cloud Support Agent",
+    "description": "Agent that triages Azure cloud tickets, searches runbooks, and routes incidents to platform specialists",
+    "model": "gpt-4",
+    "system_prompt": "You are an Azure cloud support AI agent. Your role is to:\n1. Analyze incoming Azure support tickets\n2. Categorize issues (compute, networking, storage, identity, aks, billing, monitoring, deployment)\n3. Search cloud runbooks for relevant remediation guidance\n4. Provide clear step-by-step Azure actions when a runbook is found\n5. Escalate critical or uncertain issues to the correct cloud specialist\n6. Always be precise, safe, and transparent\n\nFollow these principles:\n- Prioritize production impact and security\n- Prefer least-privilege and low-risk actions\n- Be explicit about prerequisites and rollback considerations\n- Escalate when confidence is low",
+    "max_iterations": 10,
+    "temperature": 0.7
+  },
+  "tools": [
+    {
+      "name": "analyze_ticket",
+      "description": "Analyze a support ticket to extract category, severity, key issues, and sentiment",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "description": "Unique ticket identifier"
+          },
+          "customer_message": {
+            "type": "string",
+            "description": "The customer's message text"
+          }
+        },
+        "required": ["ticket_id", "customer_message"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {"type": "string"},
+          "category": {"type": "string", "enum": ["compute", "networking", "storage", "identity", "aks", "billing", "monitoring", "deployment", "other"]},
+          "severity": {"type": "string", "enum": ["low", "medium", "high", "critical"]},
+          "key_issues": {"type": "array", "items": {"type": "string"}},
+          "sentiment": {"type": "string", "enum": ["positive", "neutral", "negative"]}
+        }
+      }
+    },
+    {
+      "name": "search_knowledge_base",
+      "description": "Search the knowledge base for solutions matching the customer's issue",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "query": {
+            "type": "string",
+            "description": "Search query describing the issue"
+          },
+          "category": {
+            "type": "string",
+            "description": "Optional category filter"
+          },
+          "top_k": {
+            "type": "integer",
+            "description": "Number of results to return (default: 5)",
+            "default": 5
+          }
+        },
+        "required": ["query"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "query": {"type": "string"},
+          "total_matches": {"type": "integer"},
+          "matches": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "article_id": {"type": "string"},
+                "title": {"type": "string"},
+                "relevance_score": {"type": "number"},
+                "solution_summary": {"type": "string"},
+                "steps": {"type": "array", "items": {"type": "string"}},
+                "prerequisites": {"type": "array", "items": {"type": "string"}}
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "name": "route_ticket",
+      "description": "Determine the routing action for a support ticket",
+      "input_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {
+            "type": "string",
+            "description": "Unique ticket identifier"
+          },
+          "category": {
+            "type": "string",
+            "description": "Ticket category"
+          },
+          "severity": {
+            "type": "string",
+            "description": "Ticket severity"
+          },
+          "kb_match_found": {
+            "type": "boolean",
+            "description": "Whether a KB solution was found"
+          },
+          "kb_relevance_score": {
+            "type": "number",
+            "description": "Relevance score of best KB match (0-1)"
+          }
+        },
+        "required": ["ticket_id", "category", "severity", "kb_match_found"]
+      },
+      "output_schema": {
+        "type": "object",
+        "properties": {
+          "ticket_id": {"type": "string"},
+          "action": {"type": "string", "enum": ["resolve_with_kb", "escalate_to_specialist", "send_followup"]},
+          "reason": {"type": "string"},
+          "confidence": {"type": "number"},
+          "specialist_type": {"type": "string"}
+        }
+      }
+    }
+  ]
+}

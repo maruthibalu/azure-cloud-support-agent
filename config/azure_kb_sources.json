@@ -1,0 +1,46 @@
+{
+  "sources": [
+    {
+      "url": "https://learn.microsoft.com/en-us/troubleshoot/azure/virtual-machines/windows/troubleshoot-vm-boot-error",
+      "category": "compute",
+      "service": "virtual-machines",
+      "severity_hint": "high",
+      "status": "approved"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/azure/virtual-network/network-security-groups-overview",
+      "category": "networking",
+      "service": "virtual-network",
+      "severity_hint": "medium",
+      "status": "approved"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/azure/storage/common/storage-network-security",
+      "category": "storage",
+      "service": "storage",
+      "severity_hint": "medium",
+      "status": "approved"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/azure/aks/troubleshoot",
+      "category": "aks",
+      "service": "aks",
+      "severity_hint": "high",
+      "status": "approved"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/azure/azure-monitor/alerts/alerts-troubleshoot",
+      "category": "monitoring",
+      "service": "azure-monitor",
+      "severity_hint": "medium",
+      "status": "approved"
+    },
+    {
+      "url": "https://learn.microsoft.com/en-us/azure/azure-resource-manager/troubleshooting/",
+      "category": "deployment",
+      "service": "azure-resource-manager",
+      "severity_hint": "medium",
+      "status": "approved"
+    }
+  ]
+}

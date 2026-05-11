@@ -1,0 +1,8 @@
+name: azure-cloud-support-agent
+services:
+  web:
+    project: .
+    host: containerapp
+    language: python
+    docker:
+      path: Dockerfile

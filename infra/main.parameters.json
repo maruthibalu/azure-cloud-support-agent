@@ -1,0 +1,30 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "environmentName": {
+      "value": "dev"
+    },
+    "acrName": {
+      "value": "replacewithuniquename"
+    },
+    "containerAppsEnvironmentName": {
+      "value": "cae-cloud-agent"
+    },
+    "containerAppName": {
+      "value": "ca-cloud-agent-ui"
+    },
+    "logAnalyticsWorkspaceName": {
+      "value": "law-cloud-agent"
+    },
+    "containerCpu": {
+      "value": 1
+    },
+    "containerMemory": {
+      "value": "2Gi"
+    },
+    "targetPort": {
+      "value": 8000
+    }
+  }
+}

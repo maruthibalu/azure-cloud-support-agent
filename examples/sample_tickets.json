@@ -1,0 +1,37 @@
+[
+  {
+    "ticket_id": "TK-2026-001",
+    "customer_name": "Sarah Martinez",
+    "customer_email": "sarah.martinez@company.com",
+    "subject": "Azure VM not starting",
+    "message": "Our production VM in East US cannot start and boot diagnostics shows startup issues. This is impacting business operations."
+  },
+  {
+    "ticket_id": "TK-2026-002",
+    "customer_name": "John Peterson",
+    "customer_email": "john.p@techcorp.com",
+    "subject": "NSG rule blocking traffic",
+    "message": "After updating NSG rules, our frontend cannot reach backend on 443. Need help validating effective security rules and fixing connectivity."
+  },
+  {
+    "ticket_id": "TK-2026-003",
+    "customer_name": "Lisa Chen",
+    "customer_email": "lisa.chen@finance.org",
+    "subject": "Unexpected Azure cost spike",
+    "message": "Our monthly Azure invoice increased by 35 percent. Please help identify top services and suggest optimization actions."
+  },
+  {
+    "ticket_id": "TK-2026-004",
+    "customer_name": "Michael Brooks",
+    "customer_email": "mbrooks@startup.io",
+    "subject": "AKS pods are crashing",
+    "message": "CRITICAL: Several checkout pods in AKS are in CrashLoopBackOff and all users are affected. Need immediate remediation guidance."
+  },
+  {
+    "ticket_id": "TK-2026-005",
+    "customer_name": "Jennifer Lopez",
+    "customer_email": "jen.lopez@retail.com",
+    "subject": "ARM deployment keeps failing",
+    "message": "Our release pipeline fails during ARM template deployment with validation and permission errors. Need a troubleshooting checklist."
+  }
+]
