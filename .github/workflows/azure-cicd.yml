@@ -4,6 +4,51 @@ on:
   push:
     branches: [ main ]
   workflow_dispatch:
+    inputs:
+      azure_location:
+        description: Azure region (for example, eastus)
+        required: false
+        default: eastus
+      resource_group:
+        description: Resource group name
+        required: false
+        default: rg-cloud-agent-dev
+      environment_name:
+        description: Environment label passed to Bicep
+        required: false
+        default: dev
+      acr_name:
+        description: ACR name (must be globally unique, lowercase alphanumeric)
+        required: false
+        default: ''
+      container_apps_env_name:
+        description: Container Apps environment name
+        required: false
+        default: cae-cloud-agent
+      container_app_name:
+        description: Container App name
+        required: false
+        default: ca-cloud-agent-ui
+      log_analytics_name:
+        description: Log Analytics workspace name
+        required: false
+        default: law-cloud-agent
+      azure_openai_endpoint:
+        description: Optional Azure OpenAI endpoint
+        required: false
+        default: ''
+      azure_openai_api_key:
+        description: Optional Azure OpenAI API key
+        required: false
+        default: ''
+      azure_openai_deployment:
+        description: Optional Azure OpenAI deployment name
+        required: false
+        default: ''
+      azure_openai_api_version:
+        description: Optional Azure OpenAI API version
+        required: false
+        default: 2024-05-01-preview
 
 permissions:
   id-token: write
@@ -12,6 +57,17 @@ permissions:
 env:
   PYTHON_VERSION: '3.13'
   IMAGE_NAME: cloud-agent-ui
+  AZURE_LOCATION: ${{ github.event.inputs.azure_location || vars.AZURE_LOCATION || 'eastus' }}
+  AZURE_RESOURCE_GROUP: ${{ github.event.inputs.resource_group || vars.AZURE_RESOURCE_GROUP || 'rg-cloud-agent-dev' }}
+  ENVIRONMENT_NAME: ${{ github.event.inputs.environment_name || vars.ENVIRONMENT_NAME || 'dev' }}
+  ACR_NAME_OVERRIDE: ${{ github.event.inputs.acr_name || vars.ACR_NAME || '' }}
+  CONTAINER_APPS_ENV_NAME: ${{ github.event.inputs.container_apps_env_name || vars.CONTAINER_APPS_ENV_NAME || 'cae-cloud-agent' }}
+  CONTAINER_APP_NAME: ${{ github.event.inputs.container_app_name || vars.CONTAINER_APP_NAME || 'ca-cloud-agent-ui' }}
+  LOG_ANALYTICS_NAME: ${{ github.event.inputs.log_analytics_name || vars.LOG_ANALYTICS_NAME || 'law-cloud-agent' }}
+  AZURE_OPENAI_ENDPOINT: ${{ github.event.inputs.azure_openai_endpoint || vars.AZURE_OPENAI_ENDPOINT || '' }}
+  AZURE_OPENAI_API_KEY: ${{ github.event.inputs.azure_openai_api_key || '' }}
+  AZURE_OPENAI_DEPLOYMENT: ${{ github.event.inputs.azure_openai_deployment || vars.AZURE_OPENAI_DEPLOYMENT || '' }}
+  AZURE_OPENAI_API_VERSION: ${{ github.event.inputs.azure_openai_api_version || vars.AZURE_OPENAI_API_VERSION || '2024-05-01-preview' }}
 
 jobs:
   ci_tests:
@@ -60,31 +116,43 @@ jobs:
           az provider register --namespace Microsoft.App
           az provider register --namespace Microsoft.OperationalInsights
 
+      - name: Resolve deployment names
+        id: naming
+        shell: bash
+        run: |
+          if [ -n "${{ env.ACR_NAME_OVERRIDE }}" ]; then
+            ACR_NAME="${{ env.ACR_NAME_OVERRIDE }}"
+          else
+            RAW_NAME="${GITHUB_REPOSITORY_OWNER}${GITHUB_REPOSITORY#*/}${GITHUB_RUN_ID}"
+            ACR_NAME="$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
+          fi
+          echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
+
       - name: Ensure resource group exists
         run: |
           az group create \
-            --name "${{ secrets.AZURE_RESOURCE_GROUP }}" \
-            --location "${{ secrets.AZURE_LOCATION }}"
+            --name "${{ env.AZURE_RESOURCE_GROUP }}" \
+            --location "${{ env.AZURE_LOCATION }}"
 
       - name: Deploy infrastructure (Bicep)
         run: |
           az deployment group create \
-            --resource-group "${{ secrets.AZURE_RESOURCE_GROUP }}" \
+            --resource-group "${{ env.AZURE_RESOURCE_GROUP }}" \
             --template-file infra/main.bicep \
             --parameters \
-              location="${{ secrets.AZURE_LOCATION }}" \
-              environmentName="${{ secrets.ENVIRONMENT_NAME }}" \
-              acrName="${{ secrets.ACR_NAME }}" \
-              containerAppsEnvironmentName="${{ secrets.CONTAINER_APPS_ENV_NAME }}" \
-              containerAppName="${{ secrets.CONTAINER_APP_NAME }}" \
-              logAnalyticsWorkspaceName="${{ secrets.LOG_ANALYTICS_NAME }}"
+              location="${{ env.AZURE_LOCATION }}" \
+              environmentName="${{ env.ENVIRONMENT_NAME }}" \
+              acrName="${{ steps.naming.outputs.acr_name }}" \
+              containerAppsEnvironmentName="${{ env.CONTAINER_APPS_ENV_NAME }}" \
+              containerAppName="${{ env.CONTAINER_APP_NAME }}" \
+              logAnalyticsWorkspaceName="${{ env.LOG_ANALYTICS_NAME }}"
 
       - name: Set workflow outputs
         id: set_outputs
         run: |
-          echo "acr_name=${{ secrets.ACR_NAME }}" >> $GITHUB_OUTPUT
-          echo "container_app_name=${{ secrets.CONTAINER_APP_NAME }}" >> $GITHUB_OUTPUT
-          echo "resource_group=${{ secrets.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "acr_name=${{ steps.naming.outputs.acr_name }}" >> $GITHUB_OUTPUT
+          echo "container_app_name=${{ env.CONTAINER_APP_NAME }}" >> $GITHUB_OUTPUT
+          echo "resource_group=${{ env.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
 
   build_and_deploy_app:
     runs-on: ubuntu-latest
@@ -121,15 +189,20 @@ jobs:
             --image "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
       - name: Set Azure OpenAI app settings
+        if: ${{ env.AZURE_OPENAI_ENDPOINT != '' && env.AZURE_OPENAI_API_KEY != '' && env.AZURE_OPENAI_DEPLOYMENT != '' }}
         run: |
           az containerapp update \
             --name "${{ needs.deploy_infrastructure.outputs.container_app_name }}" \
             --resource-group "${{ needs.deploy_infrastructure.outputs.resource_group }}" \
             --set-env-vars \
-              AZURE_OPENAI_ENDPOINT='${{ secrets.AZURE_OPENAI_ENDPOINT }}' \
-              AZURE_OPENAI_API_KEY='${{ secrets.AZURE_OPENAI_API_KEY }}' \
-              AZURE_OPENAI_DEPLOYMENT='${{ secrets.AZURE_OPENAI_DEPLOYMENT }}' \
-              AZURE_OPENAI_API_VERSION='${{ secrets.AZURE_OPENAI_API_VERSION }}'
+              AZURE_OPENAI_ENDPOINT='${{ env.AZURE_OPENAI_ENDPOINT }}' \
+              AZURE_OPENAI_API_KEY='${{ env.AZURE_OPENAI_API_KEY }}' \
+              AZURE_OPENAI_DEPLOYMENT='${{ env.AZURE_OPENAI_DEPLOYMENT }}' \
+              AZURE_OPENAI_API_VERSION='${{ env.AZURE_OPENAI_API_VERSION }}'
+
+      - name: Skip Azure OpenAI app settings
+        if: ${{ !(env.AZURE_OPENAI_ENDPOINT != '' && env.AZURE_OPENAI_API_KEY != '' && env.AZURE_OPENAI_DEPLOYMENT != '') }}
+        run: echo "Azure OpenAI settings not provided. Skipping app env var configuration."
 
       - name: Show Container App URL
         run: |
