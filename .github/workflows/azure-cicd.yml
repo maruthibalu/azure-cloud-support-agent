@@ -182,9 +182,28 @@ jobs:
         run: |
           az extension add --name containerapp --upgrade --yes
 
-      - name: Log in Docker to ACR
+      - name: Preflight ACR access check
+        shell: bash
         run: |
-          az acr login --name "${{ needs.deploy_infrastructure.outputs.acr_name }}"
+          set -euo pipefail
+          ACR_NAME="${{ needs.deploy_infrastructure.outputs.acr_name }}"
+
+          echo "Validating ACR exists: $ACR_NAME"
+          if ! ACR_ID="$(az acr show --name "$ACR_NAME" --query id -o tsv)"; then
+            echo "ACR '$ACR_NAME' was not found or is not accessible in this subscription."
+            echo "Check that the name is correct and the workflow is targeting the correct subscription."
+            exit 1
+          fi
+
+          echo "Validating Docker auth to ACR"
+          if ! az acr login --name "$ACR_NAME"; then
+            echo "ACR login failed. This usually means missing AcrPush/AcrPull permissions for the OIDC service principal."
+            echo "Grant required role (run as owner/admin):"
+            echo "az role assignment create --assignee ${{ secrets.AZURE_CLIENT_ID }} --role AcrPush --scope $ACR_ID"
+            exit 1
+          fi
+
+          echo "ACR preflight passed for '$ACR_NAME'."
 
       - name: Build and push image to ACR
         run: |
