@@ -121,13 +121,19 @@ jobs:
         shell: bash
         run: |
           ACR_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('acrName', {}).get('value', ''))")"
-          if [ -n "${{ env.ACR_NAME_OVERRIDE }}" ]; then
+          if [ -n "${{ env.ACR_NAME_OVERRIDE }}" ] && [ "${{ env.ACR_NAME_OVERRIDE }}" != "replacewithuniquename" ]; then
             ACR_NAME="${{ env.ACR_NAME_OVERRIDE }}"
           elif [ -n "$ACR_FROM_PARAMS" ]; then
             ACR_NAME="$ACR_FROM_PARAMS"
+          elif [ -n "${{ vars.ACR_NAME }}" ] && [ "${{ vars.ACR_NAME }}" != "replacewithuniquename" ]; then
+            ACR_NAME="${{ vars.ACR_NAME }}"
           else
             RAW_NAME="${GITHUB_REPOSITORY_OWNER}${GITHUB_REPOSITORY#*/}${GITHUB_RUN_ID}"
             ACR_NAME="$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
+          fi
+          if [ "$ACR_NAME" = "replacewithuniquename" ] || [ -z "$ACR_NAME" ]; then
+            echo "Invalid ACR name resolved: '$ACR_NAME'. Set infra/main.parameters.json parameters.acrName.value or workflow input acr_name."
+            exit 1
           fi
           echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
 
@@ -176,13 +182,18 @@ jobs:
         run: |
           az extension add --name containerapp --upgrade --yes
 
+      - name: Log in Docker to ACR
+        run: |
+          az acr login --name "${{ needs.deploy_infrastructure.outputs.acr_name }}"
+
       - name: Build and push image to ACR
         run: |
-          az acr build \
-            --registry "${{ needs.deploy_infrastructure.outputs.acr_name }}" \
-            --image "${{ env.IMAGE_NAME }}:${{ github.sha }}" \
-            --image "${{ env.IMAGE_NAME }}:latest" \
+          docker build \
+            -t "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}" \
+            -t "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:latest" \
             .
+          docker push "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
+          docker push "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:latest"
 
       - name: Update Container App image
         run: |
