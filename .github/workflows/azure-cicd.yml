@@ -204,6 +204,17 @@ jobs:
           echo "openai_deployment=${{ steps.naming.outputs.openai_deployment }}" >> $GITHUB_OUTPUT
           echo "openai_api_version=${{ steps.naming.outputs.openai_api_version }}" >> $GITHUB_OUTPUT
 
+      - name: Diagnostics banner (deploy_infrastructure)
+        run: |
+          echo "=== Workflow Diagnostics ==="
+          echo "job=deploy_infrastructure"
+          echo "run_id=${{ github.run_id }}"
+          echo "sha=${{ github.sha }}"
+          echo "ref=${{ github.ref }}"
+          echo "resolved_acr=${{ steps.naming.outputs.acr_name }}"
+          echo "resource_group=${{ env.AZURE_RESOURCE_GROUP }}"
+          echo "============================"
+
   build_and_deploy_app:
     runs-on: ubuntu-latest
     needs: deploy_infrastructure
@@ -222,6 +233,17 @@ jobs:
       - name: Setup Azure Container Apps CLI
         run: |
           az extension add --name containerapp --upgrade --yes
+
+      - name: Diagnostics banner (build_and_deploy_app)
+        run: |
+          echo "=== Workflow Diagnostics ==="
+          echo "job=build_and_deploy_app"
+          echo "run_id=${{ github.run_id }}"
+          echo "sha=${{ github.sha }}"
+          echo "ref=${{ github.ref }}"
+          echo "resolved_acr=${{ needs.deploy_infrastructure.outputs.acr_name }}"
+          echo "container_app=${{ needs.deploy_infrastructure.outputs.container_app_name }}"
+          echo "============================"
 
       - name: Preflight ACR access check
         shell: bash
