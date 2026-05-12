@@ -33,16 +33,12 @@ on:
         description: Log Analytics workspace name
         required: false
         default: law-cloud-agent
-      azure_openai_endpoint:
-        description: Optional Azure OpenAI endpoint
-        required: false
-        default: ''
-      azure_openai_api_key:
-        description: Optional Azure OpenAI API key
+      openai_account_name:
+        description: Azure OpenAI account name
         required: false
         default: ''
       azure_openai_deployment:
-        description: Optional Azure OpenAI deployment name
+        description: Azure OpenAI deployment name for the app
         required: false
         default: ''
       azure_openai_api_version:
@@ -64,9 +60,8 @@ env:
   CONTAINER_APPS_ENV_NAME: ${{ github.event.inputs.container_apps_env_name || vars.CONTAINER_APPS_ENV_NAME || 'cae-cloud-agent' }}
   CONTAINER_APP_NAME: ${{ github.event.inputs.container_app_name || vars.CONTAINER_APP_NAME || 'ca-cloud-agent-ui' }}
   LOG_ANALYTICS_NAME: ${{ github.event.inputs.log_analytics_name || vars.LOG_ANALYTICS_NAME || 'law-cloud-agent' }}
-  AZURE_OPENAI_ENDPOINT: ${{ github.event.inputs.azure_openai_endpoint || vars.AZURE_OPENAI_ENDPOINT || '' }}
-  AZURE_OPENAI_API_KEY: ${{ github.event.inputs.azure_openai_api_key || '' }}
-  AZURE_OPENAI_DEPLOYMENT: ${{ github.event.inputs.azure_openai_deployment || vars.AZURE_OPENAI_DEPLOYMENT || '' }}
+  OPENAI_ACCOUNT_NAME_OVERRIDE: ${{ github.event.inputs.openai_account_name || vars.OPENAI_ACCOUNT_NAME || '' }}
+  AZURE_OPENAI_DEPLOYMENT: ${{ github.event.inputs.azure_openai_deployment || vars.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini' }}
   AZURE_OPENAI_API_VERSION: ${{ github.event.inputs.azure_openai_api_version || vars.AZURE_OPENAI_API_VERSION || '2024-05-01-preview' }}
 
 jobs:
@@ -98,6 +93,9 @@ jobs:
       acr_name: ${{ steps.set_outputs.outputs.acr_name }}
       container_app_name: ${{ steps.set_outputs.outputs.container_app_name }}
       resource_group: ${{ steps.set_outputs.outputs.resource_group }}
+      openai_account_name: ${{ steps.set_outputs.outputs.openai_account_name }}
+      openai_deployment: ${{ steps.set_outputs.outputs.openai_deployment }}
+      openai_api_version: ${{ steps.set_outputs.outputs.openai_api_version }}
 
     steps:
       - name: Checkout code
@@ -115,12 +113,17 @@ jobs:
           az extension add --name containerapp --upgrade --yes
           az provider register --namespace Microsoft.App
           az provider register --namespace Microsoft.OperationalInsights
+          az provider register --namespace Microsoft.CognitiveServices
 
       - name: Resolve deployment names
         id: naming
         shell: bash
         run: |
           ACR_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('acrName', {}).get('value', ''))")"
+          OPENAI_ACCOUNT_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('openAiAccountName', {}).get('value', ''))")"
+          OPENAI_DEPLOYMENT_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('openAiDeploymentName', {}).get('value', ''))")"
+          OPENAI_API_VERSION_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('openAiApiVersion', {}).get('value', ''))")"
+
           if [ -n "${{ env.ACR_NAME_OVERRIDE }}" ] && [ "${{ env.ACR_NAME_OVERRIDE }}" != "replacewithuniquename" ]; then
             ACR_NAME="${{ env.ACR_NAME_OVERRIDE }}"
           elif [ -n "$ACR_FROM_PARAMS" ]; then
@@ -135,7 +138,32 @@ jobs:
             echo "Invalid ACR name resolved: '$ACR_NAME'. Set infra/main.parameters.json parameters.acrName.value or workflow input acr_name."
             exit 1
           fi
+
+          if [ -n "${{ env.OPENAI_ACCOUNT_NAME_OVERRIDE }}" ]; then
+            OPENAI_ACCOUNT_NAME="${{ env.OPENAI_ACCOUNT_NAME_OVERRIDE }}"
+          elif [ -n "$OPENAI_ACCOUNT_FROM_PARAMS" ]; then
+            OPENAI_ACCOUNT_NAME="$OPENAI_ACCOUNT_FROM_PARAMS"
+          else
+            RAW_OPENAI="${GITHUB_REPOSITORY_OWNER}${GITHUB_REPOSITORY#*/}openai${GITHUB_RUN_ID}"
+            OPENAI_ACCOUNT_NAME="$(echo "$RAW_OPENAI" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9-' | cut -c1-64)"
+          fi
+
+          if [ -n "$OPENAI_DEPLOYMENT_FROM_PARAMS" ]; then
+            OPENAI_DEPLOYMENT_NAME="$OPENAI_DEPLOYMENT_FROM_PARAMS"
+          else
+            OPENAI_DEPLOYMENT_NAME="${{ env.AZURE_OPENAI_DEPLOYMENT }}"
+          fi
+
+          if [ -n "$OPENAI_API_VERSION_FROM_PARAMS" ]; then
+            OPENAI_API_VERSION="$OPENAI_API_VERSION_FROM_PARAMS"
+          else
+            OPENAI_API_VERSION="${{ env.AZURE_OPENAI_API_VERSION }}"
+          fi
+
           echo "acr_name=$ACR_NAME" >> "$GITHUB_OUTPUT"
+          echo "openai_account_name=$OPENAI_ACCOUNT_NAME" >> "$GITHUB_OUTPUT"
+          echo "openai_deployment=$OPENAI_DEPLOYMENT_NAME" >> "$GITHUB_OUTPUT"
+          echo "openai_api_version=$OPENAI_API_VERSION" >> "$GITHUB_OUTPUT"
 
       - name: Ensure resource group exists
         run: |
@@ -154,7 +182,10 @@ jobs:
               acrName="${{ steps.naming.outputs.acr_name }}" \
               containerAppsEnvironmentName="${{ env.CONTAINER_APPS_ENV_NAME }}" \
               containerAppName="${{ env.CONTAINER_APP_NAME }}" \
-              logAnalyticsWorkspaceName="${{ env.LOG_ANALYTICS_NAME }}"
+              logAnalyticsWorkspaceName="${{ env.LOG_ANALYTICS_NAME }}" \
+              openAiAccountName="${{ steps.naming.outputs.openai_account_name }}" \
+              openAiDeploymentName="${{ steps.naming.outputs.openai_deployment }}" \
+              openAiApiVersion="${{ steps.naming.outputs.openai_api_version }}"
 
       - name: Set workflow outputs
         id: set_outputs
@@ -162,6 +193,9 @@ jobs:
           echo "acr_name=${{ steps.naming.outputs.acr_name }}" >> $GITHUB_OUTPUT
           echo "container_app_name=${{ env.CONTAINER_APP_NAME }}" >> $GITHUB_OUTPUT
           echo "resource_group=${{ env.AZURE_RESOURCE_GROUP }}" >> $GITHUB_OUTPUT
+          echo "openai_account_name=${{ steps.naming.outputs.openai_account_name }}" >> $GITHUB_OUTPUT
+          echo "openai_deployment=${{ steps.naming.outputs.openai_deployment }}" >> $GITHUB_OUTPUT
+          echo "openai_api_version=${{ steps.naming.outputs.openai_api_version }}" >> $GITHUB_OUTPUT
 
   build_and_deploy_app:
     runs-on: ubuntu-latest
@@ -221,21 +255,36 @@ jobs:
             --resource-group "${{ needs.deploy_infrastructure.outputs.resource_group }}" \
             --image "${{ needs.deploy_infrastructure.outputs.acr_name }}.azurecr.io/${{ env.IMAGE_NAME }}:${{ github.sha }}"
 
+      - name: Resolve Azure OpenAI endpoint and key
+        id: openai
+        shell: bash
+        run: |
+          set -euo pipefail
+          OPENAI_ACCOUNT_NAME="${{ needs.deploy_infrastructure.outputs.openai_account_name }}"
+          RESOURCE_GROUP="${{ needs.deploy_infrastructure.outputs.resource_group }}"
+
+          OPENAI_ENDPOINT="$(az cognitiveservices account show --name "$OPENAI_ACCOUNT_NAME" --resource-group "$RESOURCE_GROUP" --query properties.endpoint -o tsv)"
+          OPENAI_KEY="$(az cognitiveservices account keys list --name "$OPENAI_ACCOUNT_NAME" --resource-group "$RESOURCE_GROUP" --query key1 -o tsv)"
+
+          if [ -z "$OPENAI_ENDPOINT" ] || [ -z "$OPENAI_KEY" ]; then
+            echo "Failed to resolve Azure OpenAI endpoint/key for account '$OPENAI_ACCOUNT_NAME'."
+            exit 1
+          fi
+
+          echo "::add-mask::$OPENAI_KEY"
+          echo "openai_endpoint=$OPENAI_ENDPOINT" >> "$GITHUB_OUTPUT"
+          echo "openai_key=$OPENAI_KEY" >> "$GITHUB_OUTPUT"
+
       - name: Set Azure OpenAI app settings
-        if: ${{ env.AZURE_OPENAI_ENDPOINT != '' && env.AZURE_OPENAI_API_KEY != '' && env.AZURE_OPENAI_DEPLOYMENT != '' }}
         run: |
           az containerapp update \
             --name "${{ needs.deploy_infrastructure.outputs.container_app_name }}" \
             --resource-group "${{ needs.deploy_infrastructure.outputs.resource_group }}" \
             --set-env-vars \
-              AZURE_OPENAI_ENDPOINT='${{ env.AZURE_OPENAI_ENDPOINT }}' \
-              AZURE_OPENAI_API_KEY='${{ env.AZURE_OPENAI_API_KEY }}' \
-              AZURE_OPENAI_DEPLOYMENT='${{ env.AZURE_OPENAI_DEPLOYMENT }}' \
-              AZURE_OPENAI_API_VERSION='${{ env.AZURE_OPENAI_API_VERSION }}'
-
-      - name: Skip Azure OpenAI app settings
-        if: ${{ !(env.AZURE_OPENAI_ENDPOINT != '' && env.AZURE_OPENAI_API_KEY != '' && env.AZURE_OPENAI_DEPLOYMENT != '') }}
-        run: echo "Azure OpenAI settings not provided. Skipping app env var configuration."
+              AZURE_OPENAI_ENDPOINT='${{ steps.openai.outputs.openai_endpoint }}' \
+              AZURE_OPENAI_API_KEY='${{ steps.openai.outputs.openai_key }}' \
+              AZURE_OPENAI_DEPLOYMENT='${{ needs.deploy_infrastructure.outputs.openai_deployment }}' \
+              AZURE_OPENAI_API_VERSION='${{ needs.deploy_infrastructure.outputs.openai_api_version }}'
 
       - name: Show Container App URL
         run: |

@@ -6,7 +6,7 @@
       "value": "dev"
     },
     "acrName": {
-      "value": "replacewithuniquename"
+      "value": "balatestagent-acr"
     },
     "containerAppsEnvironmentName": {
       "value": "cae-cloud-agent"
@@ -16,6 +16,15 @@
     },
     "logAnalyticsWorkspaceName": {
       "value": "law-cloud-agent"
+    },
+    "openAiAccountName": {
+      "value": "balatestagent-openai"
+    },
+    "openAiDeploymentName": {
+      "value": "gpt-4o-mini"
+    },
+    "openAiApiVersion": {
+      "value": "2024-08-01-preview"
     },
     "containerCpu": {
       "value": 1
