@@ -120,8 +120,11 @@ jobs:
         id: naming
         shell: bash
         run: |
+          ACR_FROM_PARAMS="$(python -c "import json; print(json.load(open('infra/main.parameters.json', encoding='utf-8')).get('parameters', {}).get('acrName', {}).get('value', ''))")"
           if [ -n "${{ env.ACR_NAME_OVERRIDE }}" ]; then
             ACR_NAME="${{ env.ACR_NAME_OVERRIDE }}"
+          elif [ -n "$ACR_FROM_PARAMS" ]; then
+            ACR_NAME="$ACR_FROM_PARAMS"
           else
             RAW_NAME="${GITHUB_REPOSITORY_OWNER}${GITHUB_REPOSITORY#*/}${GITHUB_RUN_ID}"
             ACR_NAME="$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
