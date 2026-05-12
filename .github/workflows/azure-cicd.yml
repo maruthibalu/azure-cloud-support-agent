@@ -56,7 +56,7 @@ env:
   AZURE_LOCATION: ${{ github.event.inputs.azure_location || vars.AZURE_LOCATION || 'eastus' }}
   AZURE_RESOURCE_GROUP: ${{ github.event.inputs.resource_group || vars.AZURE_RESOURCE_GROUP || 'rg-cloud-agent-dev' }}
   ENVIRONMENT_NAME: ${{ github.event.inputs.environment_name || vars.ENVIRONMENT_NAME || 'dev' }}
-  ACR_NAME_OVERRIDE: ${{ github.event.inputs.acr_name || vars.ACR_NAME || '' }}
+  ACR_NAME_OVERRIDE: ${{ github.event.inputs.acr_name || '' }}
   CONTAINER_APPS_ENV_NAME: ${{ github.event.inputs.container_apps_env_name || vars.CONTAINER_APPS_ENV_NAME || 'cae-cloud-agent' }}
   CONTAINER_APP_NAME: ${{ github.event.inputs.container_app_name || vars.CONTAINER_APP_NAME || 'ca-cloud-agent-ui' }}
   LOG_ANALYTICS_NAME: ${{ github.event.inputs.log_analytics_name || vars.LOG_ANALYTICS_NAME || 'law-cloud-agent' }}
@@ -128,16 +128,20 @@ jobs:
             ACR_NAME="${{ env.ACR_NAME_OVERRIDE }}"
           elif [ -n "$ACR_FROM_PARAMS" ]; then
             ACR_NAME="$ACR_FROM_PARAMS"
-          elif [ -n "${{ vars.ACR_NAME }}" ] && [ "${{ vars.ACR_NAME }}" != "replacewithuniquename" ]; then
-            ACR_NAME="${{ vars.ACR_NAME }}"
           else
             RAW_NAME="${GITHUB_REPOSITORY_OWNER}${GITHUB_REPOSITORY#*/}${GITHUB_RUN_ID}"
             ACR_NAME="$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
           fi
+
           if [ "$ACR_NAME" = "replacewithuniquename" ] || [ -z "$ACR_NAME" ]; then
             echo "Invalid ACR name resolved: '$ACR_NAME'. Set infra/main.parameters.json parameters.acrName.value or workflow input acr_name."
             exit 1
           fi
+          if ! [[ "$ACR_NAME" =~ ^[a-z0-9]{5,50}$ ]]; then
+            echo "Invalid ACR format '$ACR_NAME'. Must match ^[a-z0-9]{5,50}$"
+            exit 1
+          fi
+          echo "Resolved ACR name: $ACR_NAME"
 
           if [ -n "${{ env.OPENAI_ACCOUNT_NAME_OVERRIDE }}" ]; then
             OPENAI_ACCOUNT_NAME="${{ env.OPENAI_ACCOUNT_NAME_OVERRIDE }}"
@@ -221,6 +225,7 @@ jobs:
         run: |
           set -euo pipefail
           ACR_NAME="${{ needs.deploy_infrastructure.outputs.acr_name }}"
+          echo "Preflight using ACR name: $ACR_NAME"
 
           echo "Validating ACR exists: $ACR_NAME"
           if ! ACR_ID="$(az acr show --name "$ACR_NAME" --query id -o tsv)"; then
