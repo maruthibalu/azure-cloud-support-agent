@@ -133,6 +133,9 @@ jobs:
             ACR_NAME="$(echo "$RAW_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
           fi
 
+          # Normalize to Azure ACR constraints: lowercase alphanumeric only, 5-50 chars.
+          ACR_NAME="$(echo "$ACR_NAME" | tr '[:upper:]' '[:lower:]' | tr -cd 'a-z0-9' | cut -c1-50)"
+
           if [ "$ACR_NAME" = "replacewithuniquename" ] || [ -z "$ACR_NAME" ]; then
             echo "Invalid ACR name resolved: '$ACR_NAME'. Set infra/main.parameters.json parameters.acrName.value or workflow input acr_name."
             exit 1

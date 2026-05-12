@@ -6,7 +6,7 @@
       "value": "dev"
     },
     "acrName": {
-      "value": "balatestagent-acr"
+      "value": "balatestagentacr"
     },
     "containerAppsEnvironmentName": {
       "value": "cae-cloud-agent"
