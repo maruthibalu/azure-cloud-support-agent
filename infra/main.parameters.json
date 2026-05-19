@@ -21,7 +21,7 @@
       "value": "balatestagent-openai"
     },
     "openAiDeploymentName": {
-      "value": "gpt-4o-mini"
+      "value": "gpt-4.1-mini"
     },
     "openAiApiVersion": {
       "value": "2024-08-01-preview"

@@ -61,7 +61,7 @@ env:
   CONTAINER_APP_NAME: ${{ github.event.inputs.container_app_name || vars.CONTAINER_APP_NAME || 'ca-cloud-agent-ui' }}
   LOG_ANALYTICS_NAME: ${{ github.event.inputs.log_analytics_name || vars.LOG_ANALYTICS_NAME || 'law-cloud-agent' }}
   OPENAI_ACCOUNT_NAME_OVERRIDE: ${{ github.event.inputs.openai_account_name || vars.OPENAI_ACCOUNT_NAME || '' }}
-  AZURE_OPENAI_DEPLOYMENT: ${{ github.event.inputs.azure_openai_deployment || vars.AZURE_OPENAI_DEPLOYMENT || 'gpt-4o-mini' }}
+  AZURE_OPENAI_DEPLOYMENT: ${{ github.event.inputs.azure_openai_deployment || vars.AZURE_OPENAI_DEPLOYMENT || 'gpt-4.1-mini' }}
   AZURE_OPENAI_API_VERSION: ${{ github.event.inputs.azure_openai_api_version || vars.AZURE_OPENAI_API_VERSION || '2024-05-01-preview' }}
 
 jobs:
