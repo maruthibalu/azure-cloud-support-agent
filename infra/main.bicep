@@ -55,7 +55,7 @@ resource managedEnvironment 'Microsoft.App/managedEnvironments@2024-03-01' = {
       destination: 'log-analytics'
       logAnalyticsConfiguration: {
         customerId: workspace.properties.customerId
-        sharedKey: listKeys(workspace.id, workspace.apiVersion).primarySharedKey
+        sharedKey: workspace.listKeys().primarySharedKey
       }
     }
   }
@@ -86,6 +86,23 @@ resource openAiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   }
 }
 
+resource openAiDeployment 'Microsoft.CognitiveServices/accounts/deployments@2023-05-01' = {
+  parent: openAiAccount
+  name: openAiDeploymentName
+  sku: {
+    name: 'Standard'
+    capacity: 10
+  }
+  properties: {
+    model: {
+      format: 'OpenAI'
+      name: openAiDeploymentName
+      version: '2024-07-18'
+    }
+    versionUpgradeOption: 'OnceNewDefaultVersionAvailable'
+  }
+}
+
 resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
   name: containerAppName
   location: location
@@ -109,6 +126,10 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
           name: 'acr-pwd'
           value: acr.listCredentials().passwords[0].value
         }
+        {
+          name: 'openai-api-key'
+          value: openAiAccount.listKeys().key1
+        }
       ]
     }
     template: {
@@ -120,6 +141,24 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
             cpu: containerCpu
             memory: containerMemory
           }
+          env: [
+            {
+              name: 'AZURE_OPENAI_ENDPOINT'
+              value: openAiAccount.properties.endpoint
+            }
+            {
+              name: 'AZURE_OPENAI_API_KEY'
+              secretRef: 'openai-api-key'
+            }
+            {
+              name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
+              value: openAiDeploymentName
+            }
+            {
+              name: 'AZURE_OPENAI_API_VERSION'
+              value: openAiApiVersion
+            }
+          ]
         }
       ]
       scale: {
@@ -139,6 +178,6 @@ output containerAppUrl string = 'https://${containerApp.properties.configuration
 output openAiAccountResourceName string = openAiAccount.name
 output openAiEndpoint string = openAiAccount.properties.endpoint
 @secure()
-output openAiApiKey string = listKeys(openAiAccount.id, openAiAccount.apiVersion).key1
+output openAiApiKey string = openAiAccount.listKeys().key1
 output openAiDeploymentNameOut string = openAiDeploymentName
 output openAiApiVersionOut string = openAiApiVersion
