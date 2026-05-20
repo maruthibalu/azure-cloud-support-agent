@@ -21,6 +21,9 @@ param logAnalyticsWorkspaceName string = 'law-cloud-agent'
 @description('Azure OpenAI account name (must be globally unique, 2-64 lowercase alphanumeric or hyphen)')
 param openAiAccountName string
 
+@description('Azure location for the OpenAI account (may differ from main location for quota reasons)')
+param openAiLocation string = 'eastus'
+
 @description('Azure OpenAI deployment name consumed by the app')
 param openAiDeploymentName string = 'gpt-4.1-mini'
 
@@ -75,7 +78,7 @@ resource acr 'Microsoft.ContainerRegistry/registries@2023-11-01-preview' = {
 
 resource openAiAccount 'Microsoft.CognitiveServices/accounts@2023-05-01' = {
   name: openAiAccountName
-  location: location
+  location: openAiLocation
   kind: 'OpenAI'
   sku: {
     name: 'S0'

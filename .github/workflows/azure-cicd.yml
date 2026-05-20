@@ -191,6 +191,7 @@ jobs:
               containerAppName="${{ env.CONTAINER_APP_NAME }}" \
               logAnalyticsWorkspaceName="${{ env.LOG_ANALYTICS_NAME }}" \
               openAiAccountName="${{ steps.naming.outputs.openai_account_name }}" \
+              openAiLocation="eastus" \
               openAiDeploymentName="${{ steps.naming.outputs.openai_deployment }}" \
               openAiApiVersion="${{ steps.naming.outputs.openai_api_version }}"
 
