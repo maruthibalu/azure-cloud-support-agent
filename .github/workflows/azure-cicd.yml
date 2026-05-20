@@ -8,7 +8,7 @@ on:
       azure_location:
         description: Azure region (for example, eastus)
         required: false
-        default: eastus
+        default: swedencentral
       resource_group:
         description: Resource group name
         required: false
@@ -53,7 +53,7 @@ permissions:
 env:
   PYTHON_VERSION: '3.13'
   IMAGE_NAME: cloud-agent-ui
-  AZURE_LOCATION: ${{ github.event.inputs.azure_location || vars.AZURE_LOCATION || 'eastus' }}
+  AZURE_LOCATION: ${{ github.event.inputs.azure_location || vars.AZURE_LOCATION || 'swedencentral' }}
   AZURE_RESOURCE_GROUP: ${{ github.event.inputs.resource_group || vars.AZURE_RESOURCE_GROUP || 'rg-cloud-agent-dev' }}
   ENVIRONMENT_NAME: ${{ github.event.inputs.environment_name || vars.ENVIRONMENT_NAME || 'dev' }}
   ACR_NAME_OVERRIDE: ${{ github.event.inputs.acr_name || '' }}
