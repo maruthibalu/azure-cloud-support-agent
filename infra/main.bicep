@@ -153,7 +153,7 @@ resource containerApp 'Microsoft.App/containerApps@2024-03-01' = {
               secretRef: 'openai-api-key'
             }
             {
-              name: 'AZURE_OPENAI_DEPLOYMENT_NAME'
+              name: 'AZURE_OPENAI_DEPLOYMENT'
               value: openAiDeploymentName
             }
             {
