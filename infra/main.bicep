@@ -28,7 +28,7 @@ param openAiLocation string = 'eastus'
 param openAiDeploymentName string = 'gpt-4.1-mini'
 
 @description('Azure OpenAI API version exposed to app config')
-param openAiApiVersion string = '2024-08-01-preview'
+param openAiApiVersion string = '2025-04-01-preview'
 
 @description('CPU allocated for container app')
 param containerCpu int = 1

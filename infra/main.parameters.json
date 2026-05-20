@@ -24,7 +24,7 @@
       "value": "gpt-4.1-mini"
     },
     "openAiApiVersion": {
-      "value": "2024-08-01-preview"
+      "value": "2025-04-01-preview"
     },
     "containerCpu": {
       "value": 1
