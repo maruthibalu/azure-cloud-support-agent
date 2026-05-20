@@ -22,7 +22,7 @@ param logAnalyticsWorkspaceName string = 'law-cloud-agent'
 param openAiAccountName string
 
 @description('Azure OpenAI deployment name consumed by the app')
-param openAiDeploymentName string = 'gpt-4o-mini'
+param openAiDeploymentName string = 'gpt-4.1-mini'
 
 @description('Azure OpenAI API version exposed to app config')
 param openAiApiVersion string = '2024-08-01-preview'
