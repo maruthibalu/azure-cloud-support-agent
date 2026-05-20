@@ -252,8 +252,8 @@ def home() -> str:
     const resultEl = document.getElementById("result");
 
     function esc(value) {
-      return String(value || "").replace(/[&<>\"']/g, function(c) {
-        return ({"&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#39;"})[c];
+      return String(value || '').replace(/[&<>"']/g, function(c) {
+        return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c];
       });
     }
 
